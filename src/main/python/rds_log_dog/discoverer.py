@@ -10,4 +10,4 @@ class Discoverer(object):
     def discover():
         client = boto3.client('rds')
         response = client.describe_db_instances()
-        return [RDSInstance(i['DBInstanceIdentifier']) for i in response['DBInstances']]
+        return [RDSInstance(i['DBInstanceIdentifier'], engine=i['Engine']) for i in response['DBInstances']]

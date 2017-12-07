@@ -19,24 +19,24 @@ class Test(unittest.TestCase):
     @mock_s3
     def setUpClass(self):
         self.s3 = boto3.client('s3')
-        self.rds_instance = RDSInstance('rds_id')
+        self.rds_instance = RDSInstance('rds_id', engine='engine')
 
     @mock_s3
     def test_get_s3_dst_prefix(self):
         logfilehandler = LogFileHandler(
             self.rds_instance, 'bucket', 'logs_prefix')
-        self.assertEqual('logs_prefix/{}'.format(self.rds_instance.name),
+        self.assertEqual('logs_prefix/{}/{}'.format(self.rds_instance.engine, self.rds_instance.name),
                          logfilehandler.get_s3_dst_prefix_for_instance())
 
     @mock_s3
     def test_setup_s3_destination_with_existing(self):
         self.s3.create_bucket(Bucket='bucket')
-        self.s3.put_object(Bucket='bucket', Key='logs_prefix/')
+        self.s3.put_object(Bucket='bucket', Key='logs_prefix/engine/')
         logfilehandler = LogFileHandler(
             self.rds_instance, 'bucket', 'logs_prefix')
         setup_s3_destination(logfilehandler.dst_bucket,
                              logfilehandler.dst_prefix_instance)
-        folders = list_folders(bucket='bucket', prefix='logs_prefix')
+        folders = list_folders(bucket='bucket', prefix='logs_prefix/engine')
         # foldername is rds_instance id (see test_get_s3_dst_prefix())
         self.assertTrue({self.rds_instance.name}.issubset(folders))
 
@@ -47,7 +47,7 @@ class Test(unittest.TestCase):
             self.rds_instance, 'bucket', 'logs_prefix')
         setup_s3_destination(logfilehandler.dst_bucket,
                              logfilehandler.dst_prefix_instance)
-        folders = list_folders(bucket='bucket', prefix='logs_prefix')
+        folders = list_folders(bucket='bucket', prefix='logs_prefix/engine')
         self.assertTrue({self.rds_instance.name}.issubset(folders))
 
     @mock_s3
@@ -55,14 +55,14 @@ class Test(unittest.TestCase):
         # bucket must exist
         self.s3.create_bucket(Bucket='bucket')
 
-        self.s3.put_object(Bucket='bucket', Key='logs/inst1/f1')
-        self.s3.put_object(Bucket='bucket', Key='logs/inst1/f2')
+        self.s3.put_object(Bucket='bucket', Key='logs/engine/inst1/f1')
+        self.s3.put_object(Bucket='bucket', Key='logs/engine/inst1/f2')
         # now some logfile for another instance
-        self.s3.put_object(Bucket='bucket', Key='logs/other/f1')
+        self.s3.put_object(Bucket='bucket', Key='logs/other/other/f1')
 
         logfiles = {S3LogFile('f1', '', '', size=0),
                     S3LogFile('f2', '', '', size=0)}
-        logfilehandler = LogFileHandler(RDSInstance('inst1'), 'bucket', 'logs')
+        logfilehandler = LogFileHandler(RDSInstance('inst1', engine='engine'), 'bucket', 'logs')
         self.assertSetEqual(logfiles, logfilehandler.discover_logfiles_in_s3())
 
     @mock_s3

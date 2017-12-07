@@ -23,7 +23,7 @@ class LogFileHandler(object):
         return logfiles_in_src - logfiles_in_dst
 
     def get_s3_dst_prefix_for_instance(self):
-        return "{}/{}".format(self.dst_prefix_all, self.rds_instance.name)
+        return "{}/{}/{}".format(self.dst_prefix_all, self.rds_instance.engine, self.rds_instance.name)
 
     def discover_logfiles_in_s3(self):
         files = set()
